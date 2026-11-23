@@ -1,0 +1,25 @@
+{
+  "name": "culvite-project",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite --config frontend/vite.config.js",
+    "build": "vite build --config frontend/vite.config.js",
+    "preview": "vite preview --config frontend/vite.config.js",
+    "start": "npm --prefix backend run start",
+    "db:init": "npm --prefix backend run db:init",
+    "db:migrate": "npm --prefix backend run db:migrate"
+  },
+  "dependencies": {
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.7",
+    "express": "^4.21.2",
+    "mysql2": "^3.14.1",
+    "vue": "^3.5.34"
+  },
+  "devDependencies": {
+    "@vitejs/plugin-vue": "^6.0.6",
+    "vite": "^8.0.12"
+  }
+}

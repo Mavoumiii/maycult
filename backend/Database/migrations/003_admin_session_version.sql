@@ -1,0 +1,2 @@
+ALTER TABLE administrateur
+  ADD COLUMN session_version INT UNSIGNED NOT NULL DEFAULT 0;
