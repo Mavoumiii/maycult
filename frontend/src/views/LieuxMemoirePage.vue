@@ -1,5 +1,14 @@
 <script setup>
 defineProps({ places: { type: Array, default: () => [] } })
+
+function mapUrl(place) {
+  if (place.googleMapsUrl) return place.googleMapsUrl
+
+  const query = place.latitude != null && place.longitude != null
+    ? `${place.latitude},${place.longitude}`
+    : [place.name, place.address, place.village, 'Mayotte'].filter(Boolean).join(', ')
+  return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(query)}`
+}
 </script>
 
 <template>
@@ -24,7 +33,7 @@ defineProps({ places: { type: Array, default: () => [] } })
           </thead>
           <tbody>
             <tr v-for="place in places" :key="place.name">
-              <td><strong>{{ place.name }}</strong></td>
+              <td><a :href="mapUrl(place)" :aria-label="`Ouvrir ${place.name} sur Google Maps`" target="_blank" rel="noopener noreferrer"><strong>{{ place.name }}</strong> ↗</a></td>
               <td>{{ place.village }}</td>
               <td>{{ place.address || '—' }}</td>
               <td><span class="status">{{ place.access }}</span></td>

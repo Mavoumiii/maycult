@@ -2,9 +2,13 @@ import * as catalogModel from '../models/catalogModel.js'
 import { httpError } from './httpError.js'
 
 const textFields = {
-  articles: ['title', 'category', 'theme', 'village', 'type', 'imageUrl', 'description', 'excerpt', 'content'],
-  places: ['name', 'village', 'address', 'access', 'description'],
+  articles: [
+    'title', 'category', 'village', 'type', 'imageUrl', 'videoUrl', 'mediaType',
+    'description', 'excerpt', 'content', 'origins', 'culturalMeaning', 'discoveryPlace',
+  ],
+  places: ['name', 'village', 'address', 'access', 'description', 'googleMapsUrl'],
 }
+const libraryCategories = new Set(['Histoires', 'Savoir-faire', 'Traditions'])
 const resources = new Set([...Object.keys(textFields), 'quiz'])
 
 function assertResource(resource) {
@@ -35,6 +39,27 @@ function optionalUrl(value, field) {
   throw httpError(400, `Le champ « ${field} » doit être une URL HTTP(S) valide.`)
 }
 
+function optionalGoogleMapsUrl(value) {
+  const text = optionalText(value, 'googleMapsUrl')
+  if (!text) return ''
+  let url
+  try {
+    url = new URL(text)
+  } catch {
+    throw httpError(400, 'Le lien Google Maps doit être une URL valide.')
+  }
+  const host = url.hostname.toLowerCase()
+  const isGoogleMapsHost = host === 'maps.app.goo.gl'
+    || host === 'goo.gl'
+    || host === 'maps.google.com'
+    || host === 'google.com'
+    || host.endsWith('.google.com')
+  if (url.protocol !== 'https:' || !isGoogleMapsHost) {
+    throw httpError(400, 'Le lien doit provenir de Google Maps.')
+  }
+  return text
+}
+
 function normalize(resource, input, id) {
   if (!input || typeof input !== 'object' || Array.isArray(input)) throw httpError(400, 'Le contenu envoyé est invalide.')
   if (resource === 'quiz') {
@@ -57,15 +82,27 @@ function normalize(resource, input, id) {
   const fields = textFields[resource]
   if (!fields) throw httpError(404, 'Type de contenu introuvable.')
   const required = resource === 'articles'
-    ? ['title', 'category', 'theme', 'type', 'description', 'content']
+    ? ['title', 'category', 'type', 'description', 'content']
     : ['name', 'village', 'access']
   const item = id === undefined ? {} : { id }
   for (const field of fields) {
     item[field] = required.includes(field)
       ? requiredText(input[field], field)
-      : field === 'imageUrl'
+      : field === 'imageUrl' || field === 'videoUrl'
         ? optionalUrl(input[field], field)
+        : field === 'googleMapsUrl'
+          ? optionalGoogleMapsUrl(input[field])
         : optionalText(input[field], field)
+  }
+  if (resource === 'articles') {
+    if (!libraryCategories.has(item.category)) {
+      throw httpError(400, 'La catégorie doit être Histoires, Savoir-faire ou Traditions.')
+    }
+    if (!item.mediaType) item.mediaType = 'video/mp4'
+    if (!['video/mp4', 'audio/mpeg'].includes(item.mediaType)) {
+      throw httpError(400, 'Le type de média doit être vidéo ou audio.')
+    }
+    item.theme = item.category
   }
   if (resource === 'places') {
     item.latitude = optionalCoordinate(input.latitude, 'latitude', -90, 90)

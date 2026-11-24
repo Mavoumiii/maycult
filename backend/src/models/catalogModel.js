@@ -3,10 +3,15 @@ import { findOrCreateCategory } from './categoryModel.js'
 import { getOrCreateSystemUserId } from './userModel.js'
 
 const articleColumns = `
-  c.id_contenu AS id, c.titre AS title, cat.nom AS category, cat.domaine AS theme,
+  c.id_contenu AS id, c.titre AS title, cat.domaine AS category, cat.domaine AS theme,
   COALESCE(c.village, '') AS village, '' AS generation,
   COALESCE(p.titre, '') AS type, COALESCE(p.image, '') AS \`imageUrl\`,
+  COALESCE(p.video, '') AS \`videoUrl\`,
+  COALESCE(p.media_type, 'video/mp4') AS \`mediaType\`,
   COALESCE(p.contenu, '') AS description, COALESCE(p.description, '') AS excerpt,
+  COALESCE(p.origines, '') AS origins,
+  COALESCE(p.signification_culturelle, '') AS \`culturalMeaning\`,
+  COALESCE(p.lieu_decouverte, '') AS \`discoveryPlace\`,
   COALESCE(c.texte, '') AS content, c.date_creation AS \`createdAt\`
 `
 const articleJoins = `
@@ -42,9 +47,14 @@ async function createArticle(item) {
     )
     contentId = content.insertId
     await client.query(
-      `INSERT INTO paragraphe (titre, contenu, description, image, id_contenu)
-       VALUES (?, ?, ?, ?, ?)`,
-      [item.type || null, item.description || null, item.excerpt || null, item.imageUrl || null, contentId],
+      `INSERT INTO paragraphe
+         (titre, contenu, description, image, video, media_type, origines, signification_culturelle, lieu_decouverte, id_contenu)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      [
+        item.type || null, item.description || null, item.excerpt || null, item.imageUrl || null,
+        item.videoUrl || null, item.mediaType, item.origins || null, item.culturalMeaning || null,
+        item.discoveryPlace || null, contentId,
+      ],
     )
     await client.query('COMMIT')
   } catch (error) {
@@ -73,14 +83,26 @@ async function updateArticle(id, item) {
     )
     if (rows[0]) {
       await client.query(
-        `UPDATE paragraphe SET titre = ?, contenu = ?, description = ?, image = ? WHERE id_paragraphe = ?`,
-        [item.type || null, item.description || null, item.excerpt || null, item.imageUrl || null, rows[0].id],
+        `UPDATE paragraphe
+         SET titre = ?, contenu = ?, description = ?, image = ?, video = ?, media_type = ?, origines = ?,
+             signification_culturelle = ?, lieu_decouverte = ?
+         WHERE id_paragraphe = ?`,
+        [
+          item.type || null, item.description || null, item.excerpt || null, item.imageUrl || null,
+          item.videoUrl || null, item.mediaType, item.origins || null, item.culturalMeaning || null,
+          item.discoveryPlace || null, rows[0].id,
+        ],
       )
     } else {
       await client.query(
-        `INSERT INTO paragraphe (titre, contenu, description, image, id_contenu)
-         VALUES (?, ?, ?, ?, ?)`,
-        [item.type || null, item.description || null, item.excerpt || null, item.imageUrl || null, id],
+        `INSERT INTO paragraphe
+           (titre, contenu, description, image, video, media_type, origines, signification_culturelle, lieu_decouverte, id_contenu)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        [
+          item.type || null, item.description || null, item.excerpt || null, item.imageUrl || null,
+          item.videoUrl || null, item.mediaType, item.origins || null, item.culturalMeaning || null,
+          item.discoveryPlace || null, id,
+        ],
       )
     }
     await client.query('COMMIT')
@@ -121,6 +143,7 @@ async function listPlaces() {
     SELECT id_lieu AS id, nom AS name, COALESCE(village, '') AS village,
       COALESCE(adresse, '') AS address, COALESCE(conditions_acces, '') AS access,
       COALESCE(description, '') AS description,
+      COALESCE(google_maps_url, '') AS \`googleMapsUrl\`,
       latitude, longitude, '' AS \`imageUrl\`
     FROM lieu ORDER BY nom ASC
   `)
@@ -132,6 +155,7 @@ async function findPlace(id) {
     SELECT id_lieu AS id, nom AS name, COALESCE(village, '') AS village,
       COALESCE(adresse, '') AS address, COALESCE(conditions_acces, '') AS access,
       COALESCE(description, '') AS description,
+      COALESCE(google_maps_url, '') AS \`googleMapsUrl\`,
       latitude, longitude, '' AS \`imageUrl\`
     FROM lieu WHERE id_lieu = ?
   `, [id])
@@ -140,9 +164,13 @@ async function findPlace(id) {
 
 async function createPlace(item) {
   const { insertId } = await pool.query(
-    `INSERT INTO lieu (nom, village, adresse, conditions_acces, description, latitude, longitude)
-     VALUES (?, ?, ?, ?, ?, ?, ?)`,
-    [item.name, item.village || null, item.address || null, item.access || null, item.description || null, item.latitude ?? null, item.longitude ?? null],
+    `INSERT INTO lieu
+       (nom, village, adresse, conditions_acces, description, latitude, longitude, google_maps_url)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+    [
+      item.name, item.village || null, item.address || null, item.access || null,
+      item.description || null, item.latitude ?? null, item.longitude ?? null, item.googleMapsUrl || null,
+    ],
   )
   return findPlace(insertId)
 }
@@ -150,8 +178,12 @@ async function createPlace(item) {
 async function updatePlace(id, item) {
   await pool.query(
     `UPDATE lieu SET nom = ?, village = ?, adresse = ?, conditions_acces = ?,
-      description = ?, latitude = ?, longitude = ? WHERE id_lieu = ?`,
-    [item.name, item.village || null, item.address || null, item.access || null, item.description || null, item.latitude ?? null, item.longitude ?? null, id],
+      description = ?, latitude = ?, longitude = ?, google_maps_url = ? WHERE id_lieu = ?`,
+    [
+      item.name, item.village || null, item.address || null, item.access || null,
+      item.description || null, item.latitude ?? null, item.longitude ?? null,
+      item.googleMapsUrl || null, id,
+    ],
   )
   return findPlace(id)
 }
@@ -259,7 +291,11 @@ async function removeQuiz(id) {
 
 export async function list(resource) {
   if (resource === 'articles') {
-    const { rows } = await pool.query(`SELECT ${articleColumns} ${articleJoins} ORDER BY c.date_creation DESC, c.id_contenu ASC`)
+    const { rows } = await pool.query(
+      `SELECT ${articleColumns} ${articleJoins}
+       WHERE cat.domaine IN ('Histoires', 'Musique', 'Savoir-faire', 'Traditions')
+       ORDER BY c.date_creation DESC, c.id_contenu ASC`,
+    )
     return rows
   }
   if (resource === 'places') return listPlaces()

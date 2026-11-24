@@ -14,7 +14,7 @@ export default defineConfig({
   plugins: [vue()],
   server: {
     proxy: {
-      '/api': 'http://maycult.alwaysdata.net',
+      '/api': 'http://localhost:3000',
     },
   },
 })

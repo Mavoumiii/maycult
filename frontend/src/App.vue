@@ -19,8 +19,9 @@ import AdminEventsPage from './views/AdminEventsPage.vue'
 import AdminCatalogPage from './views/AdminCatalogPage.vue'
 import ProposerEvenementPage from './views/ProposerEvenementPage.vue'
 import ContactPage from './views/ContactPage.vue'
+import ContentDetailPage from './views/ContentDetailPage.vue'
 import { apiRequest } from './services/api.js'
-import { fallbackArticleImages, fallbackEventImages, fallbackPlaceImage } from './data/siteData.js'
+import { fallbackArticleImages, fallbackEventImages, fallbackPlaceImage, getArticleImage } from './data/siteData.js'
 
 function pageFromPath(path) {
   if (path === '/admin') return 'admin'
@@ -63,13 +64,13 @@ const managedEvents = ref([])
 const selectedItem = ref(null)
 const submittedContributions = ref([])
 const isLoading = ref(true)
+const detailReturnScrollPosition = ref(0)
 const pages = { accueil: AccueilPage, explorer: ExplorerPage, 'lieux-memoire': LieuxMemoirePage, evenements: EvenementsPage, contribuer: ContribuerPage, 'proposer-evenement': ProposerEvenementPage, diaspora: DiasporaPage, apropos: AProposPage, moderation: ModerationPage, admin: AdminPage, 'community-profiles': CommunityProfilesPage, 'admin-events': AdminEventsPage, 'admin-catalog': AdminCatalogPage, contact: ContactPage, quiz: QuizPage, profil: ProfilPage }
 const currentPage = computed(() => pages[activePage.value] || AccueilPage)
 const authToken = computed(() => isAdmin.value ? adminToken.value : memberToken.value)
 const allEvents = computed(() => managedEvents.value.filter((event) => event.status === 'Validé'))
 const proposedEvents = computed(() => managedEvents.value.filter((event) => event.status !== 'Validé'))
 const isAdminRoute = computed(() => routePath.value.startsWith('/admin'))
-
 function withImage(item, fallbacks, defaultImage = '') {
   return { ...item, image: item.imageUrl || fallbacks[item.id] || defaultImage }
 }
@@ -91,6 +92,10 @@ function contributionAsArticle(contribution) {
     description: contribution.content,
     excerpt: contribution.content,
     content: contribution.content,
+    origins: '',
+    culturalMeaning: '',
+    discoveryPlace: '',
+    videoUrl: contribution.youtubeUrl || '',
     mediaUrl: contribution.mediaUrl || '',
     mediaName: contribution.mediaName || '',
     mediaType: contribution.mediaType || '',
@@ -122,7 +127,10 @@ async function loadSiteData() {
     }
     managedEvents.value = eventList.map((event) => withImage(event, fallbackEventImages, fallbackEventImages['event-1']))
     publishedArticles.value = [
-      ...articles.map((article) => withImage(article, fallbackArticleImages, fallbackArticleImages['article-1'])),
+      ...articles.map((article) => ({
+        ...article,
+        image: getArticleImage(article),
+      })),
       ...contributions.map(contributionAsArticle),
     ]
     contributors.value = community
@@ -158,6 +166,7 @@ function navigate(page) {
   }
   activePage.value = pages[page] ? page : 'accueil'
   selectedItem.value = null
+  detailReturnScrollPosition.value = 0
   window.scrollTo({ top: 0, behavior: 'smooth' })
 }
 
@@ -206,7 +215,18 @@ function disconnect() {
   loadSiteData()
 }
 
-function openItem(item) { selectedItem.value = item }
+function openItem(item) {
+  detailReturnScrollPosition.value = window.scrollY
+  selectedItem.value = item
+  window.scrollTo({ top: 0, behavior: 'smooth' })
+}
+
+function closeItem() {
+  selectedItem.value = null
+  window.requestAnimationFrame(() => {
+    window.scrollTo({ top: detailReturnScrollPosition.value, behavior: 'auto' })
+  })
+}
 
 async function updateContribution(contribution) {
   try {
@@ -285,29 +305,21 @@ onMounted(() => {
     <Navbar admin-mode :active-page="activePage" :is-authenticated="isAuthenticated" :is-admin="isAdmin" @navigate="navigate" @disconnect="disconnect" />
     <div v-if="apiError" class="container alert alert-danger mt-3" role="alert">{{ apiError }}</div>
     <div v-if="isLoading" class="container py-4 text-secondary" role="status">Chargement des données…</div>
-    <component :is="currentPage" :items="submittedContributions" :articles="publishedArticles" :events="managedEvents" :proposed-events="proposedEvents" :contributors="contributors" :places="places" :questions="quizQuestions" :token="adminToken" :auth-token="authToken" :is-authenticated="isAuthenticated" :is-admin="isAdmin" :login-error="adminLoginError" :auth-error="memberAuthError" :current-user="currentUser" @navigate="navigate" @member-auth="connectMember" @admin-login="connectAdmin" @event-created="addEvent" @event-updated="updateEvent" @event-deleted="deleteEvent" @proposal-validated="validateProposedEvent" @proposal-rejected="rejectProposedEvent" @open-article="openItem" @open-event="openItem" @open-place="openItem" @contribution-validated="validateContribution" @contribution-updated="updateContribution" @contribution-deleted="deleteContribution" @catalog-updated="loadSiteData" />
-    <Footer admin-mode />
+    <div v-show="!selectedItem">
+      <component :is="currentPage" :items="submittedContributions" :articles="publishedArticles" :events="managedEvents" :proposed-events="proposedEvents" :contributors="contributors" :places="places" :questions="quizQuestions" :token="adminToken" :auth-token="authToken" :is-authenticated="isAuthenticated" :is-admin="isAdmin" :login-error="adminLoginError" :auth-error="memberAuthError" :current-user="currentUser" @navigate="navigate" @member-auth="connectMember" @admin-login="connectAdmin" @event-created="addEvent" @event-updated="updateEvent" @event-deleted="deleteEvent" @proposal-validated="validateProposedEvent" @proposal-rejected="rejectProposedEvent" @open-article="openItem" @open-event="openItem" @open-place="openItem" @contribution-validated="validateContribution" @contribution-updated="updateContribution" @contribution-deleted="deleteContribution" @catalog-updated="loadSiteData" />
+      <Footer admin-mode />
+    </div>
+    <ContentDetailPage v-if="selectedItem" :item="selectedItem" @back="closeItem" />
   </template>
   <template v-else>
     <Navbar :active-page="activePage" :is-authenticated="isAuthenticated" :is-admin="isAdmin" @navigate="navigate" @disconnect="disconnect" />
     <div v-if="apiError" class="container alert alert-danger mt-3" role="alert">{{ apiError }}</div>
     <div v-if="isLoading" class="container py-4 text-secondary" role="status">Chargement des données…</div>
-    <Hero v-if="activePage === 'accueil'" @navigate="navigate" />
-    <main class="container my-4"><component :is="currentPage" :items="submittedContributions" :articles="publishedArticles" :events="allEvents" :proposed-events="proposedEvents" :contributors="contributors" :places="places" :questions="quizQuestions" :is-authenticated="isAuthenticated" :is-admin="isAdmin" :auth-token="authToken" :auth-error="memberAuthError" :login-error="adminLoginError" :current-user="currentUser" @navigate="navigate" @member-auth="connectMember" @admin-login="connectAdmin" @event-proposed="loadSiteData" @contribution-submitted="loadSiteData" @open-article="openItem" @open-event="openItem" @open-place="openItem" /></main>
-    <Footer @navigate="navigate" />
-  </template>
-  <div v-if="selectedItem" class="modal-backdrop-custom" @click.self="selectedItem = null">
-    <div class="modal-card bg-white rounded-3 shadow p-4">
-      <button class="btn-close float-end" @click="selectedItem = null"></button>
-      <h2 class="h4 pe-4">{{ selectedItem.title || selectedItem.name }}</h2>
-      <img v-if="selectedItem.image" :src="selectedItem.image" :alt="selectedItem.title || selectedItem.name" class="modal-image rounded-3 mb-3">
-      <video v-if="selectedItem.mediaType?.startsWith('video/')" :src="selectedItem.mediaUrl" class="w-100 rounded mb-3" controls playsinline></video>
-      <audio v-else-if="selectedItem.mediaType?.startsWith('audio/')" :src="selectedItem.mediaUrl" class="w-100 mb-3" controls></audio>
-      <a v-if="selectedItem.youtubeUrl" :href="selectedItem.youtubeUrl" target="_blank" rel="noopener noreferrer" class="btn btn-outline-danger btn-sm mb-3">Regarder la vidéo sur YouTube ↗</a>
-      <p class="text-secondary">{{ selectedItem.description || selectedItem.content }}</p>
-      <p v-if="selectedItem.theme || selectedItem.type" class="small text-secondary mb-3">{{ selectedItem.theme }}<span v-if="selectedItem.theme && selectedItem.type"> · </span>{{ selectedItem.type }}</p>
-      <p v-if="selectedItem.location" class="mb-3"><strong>Lieu :</strong> {{ selectedItem.location }}</p>
-      <button class="btn btn-danger" @click="selectedItem = null">Fermer</button>
+    <div v-show="!selectedItem">
+      <Hero v-if="activePage === 'accueil'" @navigate="navigate" />
+      <main class="container my-4"><component :is="currentPage" :items="submittedContributions" :articles="publishedArticles" :events="allEvents" :proposed-events="proposedEvents" :contributors="contributors" :places="places" :questions="quizQuestions" :is-authenticated="isAuthenticated" :is-admin="isAdmin" :auth-token="authToken" :auth-error="memberAuthError" :login-error="adminLoginError" :current-user="currentUser" @navigate="navigate" @member-auth="connectMember" @admin-login="connectAdmin" @event-proposed="loadSiteData" @contribution-submitted="loadSiteData" @open-article="openItem" @open-event="openItem" @open-place="openItem" /></main>
+      <Footer @navigate="navigate" />
     </div>
-  </div>
+    <ContentDetailPage v-if="selectedItem" :item="selectedItem" @back="closeItem" />
+  </template>
 </template>

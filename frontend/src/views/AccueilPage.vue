@@ -29,8 +29,8 @@ const emit = defineEmits(['open-article', 'open-event', 'navigate'])
       <div class="row g-3">
         <div v-for="article in latestArticles" :key="article.id" class="col-md-4">
           <article class="card border-0 shadow-sm h-100 content-card" role="button" @click="$emit('open-article', article)">
-            <img :src="article.image" :alt="article.title" class="card-img-top object-fit-cover" style="height: 180px">
-            <div class="card-body"><span class="badge text-bg-danger mb-2">{{ article.category }}</span><h3 class="h6 fw-bold">{{ article.title }}</h3><p class="small text-secondary mb-0">{{ article.description }}</p></div>
+            <img :src="article.image" :alt="article.title" class="card-img-top object-fit-cover" :style="{ height: '180px', objectPosition: article.title.toLowerCase().includes('tressage') ? 'center bottom' : 'center' }">
+            <div class="card-body"><span class="badge text-bg-danger mb-2">{{ article.category }}</span><h3 class="h6 fw-bold content-card-title">{{ article.title }}</h3><p class="small text-secondary mb-0 content-card-description">{{ article.description }}</p></div>
           </article>
         </div>
       </div>
@@ -40,7 +40,7 @@ const emit = defineEmits(['open-article', 'open-event', 'navigate'])
         <div v-for="event in latestEvents" :key="event.id" class="col-md-4">
           <article class="card border-0 shadow-sm h-100 content-card" role="button" @click="$emit('open-event', event)">
             <img :src="event.image" :alt="event.title" class="card-img-top object-fit-cover" style="height: 180px">
-            <div class="card-body"><span class="badge text-bg-danger mb-2">{{ formatShortDate(event.start) }}</span><h3 class="h6 fw-bold">{{ event.title }}</h3><p class="small text-secondary mb-0">{{ event.location }}</p></div>
+            <div class="card-body"><span class="badge text-bg-danger mb-2">{{ formatShortDate(event.start) }}</span><h3 class="h6 fw-bold content-card-title">{{ event.title }}</h3><p class="small text-secondary mb-0 content-card-description">{{ event.location }}</p></div>
           </article>
         </div>
       </div>

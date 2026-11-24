@@ -7,19 +7,27 @@ const emit = defineEmits(['navigate', 'catalog-updated'])
 const resources = [
   { key: 'articles', label: 'Contenus culturels', fields: [
     { key: 'title', label: 'Titre', required: true },
-    { key: 'category', label: 'Catégorie', required: true },
-    { key: 'theme', label: 'Thématique', required: true },
+    { key: 'category', label: 'Catégorie', type: 'select', options: ['Histoires', 'Savoir-faire', 'Traditions'], default: 'Histoires', required: true },
     { key: 'village', label: 'Village' },
     { key: 'type', label: 'Format', required: true },
-    { key: 'imageUrl', label: 'URL de l’image' },
-    { key: 'description', label: 'Résumé affiché', type: 'textarea', required: true },
-    { key: 'excerpt', label: 'Extrait', type: 'textarea' },
-    { key: 'content', label: 'Contenu complet', type: 'textarea', required: true },
+    { key: 'imageUrl', label: 'URL de la photo de couverture', type: 'url' },
+    { key: 'mediaType', label: 'Type de média', type: 'select', options: [
+      { value: 'video/mp4', label: 'Vidéo' },
+      { value: 'audio/mpeg', label: 'Audio' },
+    ], default: 'video/mp4' },
+    { key: 'videoUrl', label: 'URL de l’extrait (YouTube, SoundCloud, Vimeo ou fichier)', type: 'url' },
+    { key: 'description', label: 'Résumé affiché', type: 'textarea', rows: 4, required: true },
+    { key: 'excerpt', label: 'Extrait', type: 'textarea', rows: 4 },
+    { key: 'content', label: 'Histoire complète', type: 'textarea', rows: 8, required: true },
+    { key: 'origins', label: 'Origines détaillées', type: 'textarea', rows: 6 },
+    { key: 'culturalMeaning', label: 'Signification culturelle détaillée', type: 'textarea', rows: 6 },
+    { key: 'discoveryPlace', label: 'Lieu où le découvrir (nom, adresse ou village)', type: 'textarea' },
   ] },
   { key: 'places', label: 'Lieux', fields: [
     { key: 'name', label: 'Nom du lieu', required: true },
     { key: 'village', label: 'Commune', required: true },
     { key: 'address', label: 'Adresse' },
+    { key: 'googleMapsUrl', label: 'Lien direct Google Maps (facultatif)', type: 'url' },
     { key: 'access', label: 'Conditions d’accès', required: true },
     { key: 'description', label: 'Description', type: 'textarea' },
     { key: 'latitude', label: 'Latitude', type: 'number' },
@@ -42,7 +50,10 @@ const activeResource = computed(() => resources.find((resource) => resource.key 
 const activeItems = computed(() => collections.value[activeKey.value] || [])
 
 function emptyForm() {
-  return Object.fromEntries(activeResource.value.fields.map((field) => [field.key, field.type === 'number' ? 0 : '']))
+  return Object.fromEntries(activeResource.value.fields.map((field) => [
+    field.key,
+    field.type === 'number' ? 0 : field.default || '',
+  ]))
 }
 
 function resetForm() {
@@ -138,10 +149,14 @@ onMounted(() => {
       <section class="card border-0 shadow-sm mb-4">
         <div class="card-body p-4">
           <h2 class="h4 fw-bold">{{ editingId ? 'Modifier' : 'Ajouter' }} : {{ activeResource.label }}</h2>
+          <p v-if="activeKey === 'articles'" class="small text-secondary">Pour les contenus de Savoir-faire et Traditions, vous pouvez ajouter un extrait audio ou vidéo court. Les liens YouTube, Vimeo et SoundCloud sont intégrés à la fiche; les fichiers audio/vidéo directs sont lus sur le site.</p>
           <form class="row g-3" @submit.prevent="save">
             <div v-for="field in activeResource.fields" :key="field.key" class="col-md-6">
               <label class="form-label" :for="`catalog-${field.key}`">{{ field.label }}</label>
-              <textarea v-if="field.type === 'textarea'" :id="`catalog-${field.key}`" v-model="form[field.key]" class="form-control" rows="3" :required="field.required"></textarea>
+              <textarea v-if="field.type === 'textarea'" :id="`catalog-${field.key}`" v-model="form[field.key]" class="form-control" :rows="field.rows || 3" :required="field.required"></textarea>
+              <select v-else-if="field.type === 'select'" :id="`catalog-${field.key}`" v-model="form[field.key]" class="form-select" :required="field.required">
+                <option v-for="option in field.options" :key="option.value || option" :value="option.value || option">{{ option.label || option }}</option>
+              </select>
               <input v-else :id="`catalog-${field.key}`" v-model="form[field.key]" class="form-control" :type="field.type || 'text'" :required="field.required" :min="field.type === 'number' ? 0 : undefined">
             </div>
             <div class="col-12 d-flex gap-2">

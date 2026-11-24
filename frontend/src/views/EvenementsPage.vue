@@ -24,9 +24,9 @@ function badgeClass(category) { return `badge-${category}` }
             <span class="badge rounded-2 event-date" :class="badgeClass(event.category)">{{ formatDay(event.start) }}</span>
             <img v-if="event.image" :src="event.image" :alt="event.title" class="rounded object-fit-cover" style="width: 160px; height: 110px">
             <div class="flex-grow-1 mt-3 mt-md-0">
-                <h3 class="h5 fw-bold mb-2">{{ event.title }}</h3>
+                <h3 class="h5 fw-bold mb-2 content-card-title">{{ event.title }}</h3>
                 <p class="small text-secondary mb-2">{{ formatDate(event) }} · {{ event.location }}</p>
-                <p class="mb-0">{{ event.description }}</p>
+                <p class="mb-0 content-card-description">{{ event.description }}</p>
             </div>
             <button class="btn btn-outline-danger btn-sm rounded-pill mt-3 mt-md-0" @click="$emit('open-event', event)">Détails</button>
           </div>

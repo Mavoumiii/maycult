@@ -53,19 +53,29 @@ export async function createContribution(item, userId) {
 }
 
 export async function listContributions() {
-  const { rows } = await pool.query(`SELECT ${columns} ${joins} ORDER BY co.date_soumission DESC`)
+  const { rows } = await pool.query(
+    `SELECT ${columns} ${joins}
+     WHERE cat.nom = 'Contributions'
+     ORDER BY co.date_soumission DESC`,
+  )
   return rows
 }
 
 export async function listPublishedContributions() {
   const { rows } = await pool.query(
-    `SELECT ${columns} ${joins} WHERE co.statut = 'Validé' ORDER BY co.date_soumission DESC`,
+    `SELECT ${columns} ${joins}
+     WHERE cat.nom = 'Contributions' AND co.statut = 'Validé'
+     ORDER BY co.date_soumission DESC`,
   )
   return rows
 }
 
 export async function findContribution(id) {
-  const { rows } = await pool.query(`SELECT ${columns} ${joins} WHERE co.id_contribution = ?`, [id])
+  const { rows } = await pool.query(
+    `SELECT ${columns} ${joins}
+     WHERE co.id_contribution = ? AND cat.nom = 'Contributions'`,
+    [id],
+  )
   return rows[0] || null
 }
 
@@ -134,6 +144,8 @@ export async function updateContribution(id, item) {
 }
 
 export async function setContributionStatus(id, status) {
+  const current = await findContribution(id)
+  if (!current) return null
   const moderatorId = await getOrCreateSystemUserId()
   const client = await pool.connect()
   try {
@@ -187,8 +199,9 @@ export async function listContributors() {
     SELECT CONCAT_WS(' ', u.prenom, u.nom) AS name, MAX(c.village) AS village
     FROM contribution co
     JOIN contenu c ON c.id_contribution = co.id_contribution
+    JOIN categorie cat ON cat.id_categorie = c.id_categorie
     JOIN utilisateur u ON u.id_utilisateur = co.id_utilisateur
-    WHERE co.statut = 'Validé'
+    WHERE co.statut = 'Validé' AND cat.nom = 'Contributions'
     GROUP BY u.id_utilisateur, u.nom, u.prenom
     ORDER BY MAX(co.date_soumission) DESC
   `)

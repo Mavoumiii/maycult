@@ -2,16 +2,26 @@
 .hero-image { min-height: 560px; background-size: cover; background-position: center; clip-path: ellipse(100% 100% at 100% 50%); }
 .brand-image { background-size: cover; clip-path: ellipse(100% 100% at 100% 50%); }
 .content-card { cursor: pointer; transition: transform .2s ease, box-shadow .2s ease; }
+.content-card-title, .content-card-description { display: -webkit-box; -webkit-box-orient: vertical; overflow: hidden; }
+.content-card-title { -webkit-line-clamp: 2; }
+.content-card-description { -webkit-line-clamp: 3; }
+.content-detail-article { margin-inline: auto; max-width: 900px; }
+.content-detail-title, .content-detail-section p { overflow-wrap: anywhere; }
+.content-detail-page a:not(.btn) { color: var(--mc-red); overflow-wrap: anywhere; }
+.content-detail-image { display: block; max-height: 520px; object-fit: cover; width: 100%; }
+.content-detail-image--tressage { object-position: center bottom; }
+.content-detail-section p { line-height: 1.75; white-space: pre-line; }
+.content-detail-video { aspect-ratio: 16 / 9; border: 0; width: 100%; }
+.content-detail-audio { width: 100%; }
+.content-detail-audio-frame { border: 0; height: 166px; width: 100%; }
 .content-card:hover { transform: translateY(-4px); box-shadow: 0 .7rem 1.4rem rgba(0, 0, 0, .12) !important; }
-.modal-backdrop-custom { align-items: center; background: rgba(0, 0, 0, .55); display: flex; inset: 0; justify-content: center; padding: 1rem; position: fixed; z-index: 1050; }
-.modal-card { max-width: 520px; width: 100%; }
-.modal-image { display: block; max-height: 260px; object-fit: cover; width: 100%; }
 :root { --mc-red: #b3122b; --mc-gold: #c9971c; --mc-gold-light: #f2ddaa; }
 .page-shell { min-height: 55vh; }
 .eyebrow { background: var(--mc-gold-light); color: var(--mc-red); font-size: .72rem; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; }
 .content-card, .mycult-card { transition: transform .2s ease, box-shadow .2s ease; }
 .content-card:hover, .mycult-card:hover { transform: translateY(-3px); box-shadow: 0 .7rem 1.4rem rgba(0, 0, 0, .12) !important; }
 .badge-festival { background: #fbe0e3; color: var(--mc-red); }
+.badge-concert { background: #e9e2f5; color: #51387a; }
 .badge-tradition { background: var(--mc-gold-light); color: #8a651a; }
 .badge-ceremonie { background: #e3ecdc; color: #3f6b2c; }
 .event-date { min-width: 72px; }
