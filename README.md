@@ -31,7 +31,9 @@ Le workflow `.github/workflows/deploy-frontend.yml` compile le frontend et le pu
 
 Le build utilise `https://maycult.alwaysdata.net/api` par défaut. Pour changer l’URL, ajoutez une variable de dépôt `VITE_API_URL` dans **Settings > Secrets and variables > Actions > Variables**. Cette URL est publique dans le navigateur : n’y mettez aucun secret.
 
-Pour autoriser les appels depuis le site publié, configurez `CLIENT_ORIGIN` dans l’environnement backend avec les deux origines, séparées par une virgule : `http://localhost:5173,https://<propriétaire-github>.github.io`, puis redémarrez l’API. Remplacez `<propriétaire-github>` par le propriétaire du dépôt.
+Pour autoriser les appels depuis le site publié, configurez `CLIENT_ORIGIN` dans l’environnement backend avec les deux origines, séparées par une virgule : `http://localhost:5173,https://mavoumiii.github.io`, puis redémarrez l’API. Le backend autorise également cette origine GitHub Pages par défaut.
+
+Les pages publiques ont chacune leur propre chemin : Accueil `/`, Explorer `/explorer`, Lieux de mémoire `/lieux-de-memoire`, Événements `/evenements`, Quiz `/quiz`, Profil `/profil`, Contribuer `/contribuer`, Proposer un événement `/proposer-evenement`, Diaspora `/diaspora`, À propos `/a-propos` et Contact `/contact`. Le workflow publie aussi une page de repli pour que les liens directs et le rechargement de ces URL fonctionnent sur GitHub Pages.
 
 ## Organisation
 
@@ -45,7 +47,7 @@ Pour autoriser les appels depuis le site publié, configurez `CLIENT_ORIGIN` dan
 - `backend/src/middlewares` : authentification admin, erreurs et gestion asynchrone.
 - `backend/src/router` : routes `/api`.
 
-Les événements proposés et les contributions sont reliés au compte membre connecté et enregistrés en attente de modération. Seuls les éléments validés sont retournés par les routes publiques. Les contenus, lieux et questions du quiz sont stockés dans les tables françaises du MLD et gérés depuis l’espace administrateur. La gestion des artistes n’est pas incluse dans le schéma MayCult et n’est donc pas disponible dans l’API.
+Les événements proposés et les contributions sont reliés au compte membre connecté et enregistrés en attente de modération. Le formulaire de contribution permet de choisir Histoires, Savoir-faire ou Traditions; la catégorie est conservée à la validation et détermine le classement dans la bibliothèque. Seuls les éléments validés sont retournés par les routes publiques. Les contenus, lieux et questions du quiz sont stockés dans les tables françaises du MLD et gérés depuis l’espace administrateur. La gestion des artistes n’est pas incluse dans le schéma MayCult et n’est donc pas disponible dans l’API.
 
 La migration `002_maycult_schema.sql` crée le nouveau schéma puis supprime les anciennes tables anglaises de l’API et leurs données. Cette réinitialisation est destructive : sauvegardez la base avant d’exécuter `npm run db:init` si elle contient des informations à conserver. Le seed MayCult crée des exemples de contenus, lieux, quiz et événements ; il ne crée pas d’artistes.
 

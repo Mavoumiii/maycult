@@ -4,6 +4,7 @@ import { getOrCreateSystemUserId } from './userModel.js'
 
 const columns = `
   co.id_contribution AS id, c.titre AS title,
+  co.categorie_bibliotheque AS category,
   CONCAT_WS(' ', u.prenom, u.nom) AS author,
   COALESCE(p.titre, '') AS type, COALESCE(c.village, '') AS village,
   COALESCE(c.texte, '') AS content,
@@ -28,9 +29,9 @@ export async function createContribution(item, userId) {
   try {
     await client.query('START TRANSACTION')
     const contributionResult = await client.query(
-      `INSERT INTO contribution (statut, charte_acceptee, id_utilisateur)
-       VALUES (?, ?, ?)`,
-      [item.status, item.charterAccepted, userId],
+      `INSERT INTO contribution (statut, categorie_bibliotheque, charte_acceptee, id_utilisateur)
+       VALUES (?, ?, ?, ?)`,
+      [item.status, item.category, item.charterAccepted, userId],
     )
     const contentResult = await client.query(
       `INSERT INTO contenu (titre, village, texte, id_categorie, id_contribution)
@@ -89,6 +90,12 @@ export async function updateContribution(id, item) {
   const client = await pool.connect()
   try {
     await client.query('START TRANSACTION')
+    if (Object.hasOwn(item, 'category')) {
+      await client.query(
+        'UPDATE contribution SET categorie_bibliotheque = ? WHERE id_contribution = ?',
+        [item.category, id],
+      )
+    }
     const contentFields = []
     const contentValues = []
     if (Object.hasOwn(item, 'title')) {

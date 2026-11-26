@@ -16,7 +16,7 @@ const heroImage = tressageImage
 export const navigationLinks = [
   { id: 'accueil', label: 'Accueil' }, { id: 'explorer', label: 'Explorer' }, { id: 'evenements', label: 'Événements' }, { id: 'quiz', label: 'Quiz' }, { id: 'profil', label: 'Profil' },
 ]
-
+export const libraryCategories = ['Histoires', 'Savoir-faire', 'Traditions']
 export const categoryLabels = { festival: 'Festival', concert: 'Concert', tradition: 'Tradition', ceremonie: 'Cérémonie' }
 
 export const fallbackArticleImages = {

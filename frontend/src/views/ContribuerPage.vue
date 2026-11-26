@@ -1,6 +1,7 @@
 <script setup>
 import { computed, ref } from 'vue'
 import { apiRequest } from '../services/api.js'
+import { libraryCategories } from '../data/siteData.js'
 
 const props = defineProps({ isAuthenticated: { type: Boolean, default: false }, authToken: { type: String, default: '' } })
 const emit = defineEmits(['contribution-submitted', 'navigate'])
@@ -8,7 +9,7 @@ const sent = ref(false)
 const loginRequired = ref(false)
 const saving = ref(false)
 const submitError = ref('')
-const form = ref({ type: 'Récit', title: '', village: '', content: '', imageUrl: '', mediaUrl: '', mediaType: '', youtubeUrl: '' })
+const form = ref({ category: 'Histoires', type: 'Récit', title: '', village: '', content: '', imageUrl: '', mediaUrl: '', mediaType: '', youtubeUrl: '' })
 const youtubeLink = computed(() => {
   try {
     const url = new URL(form.value.youtubeUrl)
@@ -30,6 +31,7 @@ async function submit() {
       method: 'POST',
       token: props.authToken,
       body: {
+        category: form.value.category,
         title: form.value.title,
         type: form.value.type,
         village: form.value.village,
@@ -65,6 +67,7 @@ async function submit() {
         </div>
         <form v-if="!sent" class="card border-0 shadow-sm p-4" @submit.prevent="submit">
           <div class="row g-3">
+            <div class="col-12"><label class="form-label" for="content-category">Catégorie de la bibliothèque</label><select id="content-category" v-model="form.category" class="form-select" required><option v-for="category in libraryCategories" :key="category" :value="category">{{ category }}</option></select></div>
             <div class="col-12"><label class="form-label" for="content-type">Type de contenu</label><select id="content-type" v-model="form.type" class="form-select"><option>Récit</option><option>Histoire</option><option>Savoir-faire</option><option>Photo</option><option>Vidéo</option><option>Témoignage audio</option></select></div>
             <div class="col-12"><label class="form-label" for="content-title">Titre de contenu</label><input id="content-title" v-model="form.title" required class="form-control" placeholder="Donnez un titre à votre contribution"></div>
             <div class="col-12"><label class="form-label" for="village">Village concerné</label><input id="village" v-model="form.village" class="form-control" placeholder="Ex. Sada"></div>

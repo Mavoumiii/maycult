@@ -1,6 +1,8 @@
 import * as contributionModel from '../models/contributionModel.js'
 import { httpError } from './httpError.js'
 
+const libraryCategories = new Set(['Histoires', 'Savoir-faire', 'Traditions'])
+
 function requiredText(value, field) {
   if (typeof value !== 'string' || !value.trim()) throw httpError(400, `Le champ « ${field} » est obligatoire.`)
   return value.trim()
@@ -23,7 +25,12 @@ function optionalUrl(value, field) {
 
 export function createContribution(input, userId) {
   if (input.charterAccepted !== true) throw httpError(400, 'Vous devez accepter la charte de contribution.')
+  const category = typeof input.category === 'string' ? input.category.trim() : 'Histoires'
+  if (!libraryCategories.has(category)) {
+    throw httpError(400, 'La catégorie doit être Histoires, Savoir-faire ou Traditions.')
+  }
   return contributionModel.createContribution({
+    category,
     title: requiredText(input.title, 'title'),
     type: typeof input.type === 'string' && input.type.trim() ? input.type.trim() : 'Récit',
     village: typeof input.village === 'string' ? input.village.trim() : '',
@@ -41,6 +48,9 @@ export const listPublishedContributions = () => contributionModel.listPublishedC
 export const listContributors = () => contributionModel.listContributors()
 
 export async function updateContribution(id, input) {
+  if (Object.hasOwn(input, 'category') && !libraryCategories.has(input.category)) {
+    throw httpError(400, 'La catégorie doit être Histoires, Savoir-faire ou Traditions.')
+  }
   const contribution = await contributionModel.updateContribution(id, input)
   if (!contribution) throw httpError(404, 'Contribution introuvable.')
   return contribution

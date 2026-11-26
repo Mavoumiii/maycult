@@ -1,13 +1,14 @@
 <script setup>
 import { computed, onMounted, ref } from 'vue'
 import { apiRequest } from '../services/api.js'
+import { libraryCategories } from '../data/siteData.js'
 
 const props = defineProps({ isAdmin: { type: Boolean, default: false }, token: { type: String, default: '' } })
 const emit = defineEmits(['navigate', 'catalog-updated'])
 const resources = [
   { key: 'articles', label: 'Contenus culturels', fields: [
     { key: 'title', label: 'Titre', required: true },
-    { key: 'category', label: 'Catégorie', type: 'select', options: ['Histoires', 'Savoir-faire', 'Traditions'], default: 'Histoires', required: true },
+    { key: 'category', label: 'Catégorie', type: 'select', options: libraryCategories, default: 'Histoires', required: true },
     { key: 'village', label: 'Village' },
     { key: 'type', label: 'Format', required: true },
     { key: 'imageUrl', label: 'URL de la photo de couverture', type: 'url' },

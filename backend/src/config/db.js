@@ -4,12 +4,17 @@ import { readdir, readFile } from 'node:fs/promises'
 import { resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
-export const env = {
-  port: Number(process.env.PORT || 3000),
-  clientOrigins: (process.env.CLIENT_ORIGIN || 'http://localhost:5173')
+const clientOrigins = new Set([
+  ...(process.env.CLIENT_ORIGIN || 'http://localhost:5173')
     .split(',')
     .map((origin) => origin.trim())
     .filter(Boolean),
+  'https://mavoumiii.github.io',
+])
+
+export const env = {
+  port: Number(process.env.PORT || 3000),
+  clientOrigins: [...clientOrigins],
   databaseHost: process.env.DB_HOST || 'localhost',
   databasePort: Number(process.env.DB_PORT || 3306),
   databaseName: process.env.DB_NAME || 'culvite',

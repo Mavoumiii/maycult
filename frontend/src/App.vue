@@ -23,23 +23,41 @@ import ContentDetailPage from './views/ContentDetailPage.vue'
 import { apiRequest } from './services/api.js'
 import { fallbackArticleImages, fallbackEventImages, fallbackPlaceImage, getArticleImage } from './data/siteData.js'
 
+const publicRoutes = {
+  accueil: '/',
+  explorer: '/explorer',
+  'lieux-memoire': '/lieux-de-memoire',
+  evenements: '/evenements',
+  quiz: '/quiz',
+  profil: '/profil',
+  contribuer: '/contribuer',
+  'proposer-evenement': '/proposer-evenement',
+  diaspora: '/diaspora',
+  apropos: '/a-propos',
+  contact: '/contact',
+}
+const adminRoutes = {
+  admin: '/admin',
+  moderation: '/admin/moderation',
+  'community-profiles': '/admin/profils',
+  explorer: '/admin/explorer',
+  'admin-events': '/admin/evenements',
+  'admin-catalog': '/admin/contenus',
+}
+const publicPagesByPath = Object.fromEntries(Object.entries(publicRoutes).map(([page, path]) => [path, page]))
+const adminPagesByPath = Object.fromEntries(Object.entries(adminRoutes).map(([page, path]) => [path, page]))
+
 function pageFromPath(path) {
-  if (path === '/admin') return 'admin'
-  if (path === '/admin/moderation') return 'moderation'
-  if (path === '/admin/profils') return 'community-profiles'
-  if (path === '/admin/explorer') return 'explorer'
-  if (path === '/admin/evenements') return 'admin-events'
-  if (path === '/admin/contenus') return 'admin-catalog'
-  return 'accueil'
+  return adminPagesByPath[path] || publicPagesByPath[path] || 'accueil'
 }
 
 const basePath = import.meta.env.BASE_URL.replace(/\/$/, '')
 
 function routeFromLocation(path) {
-  if (basePath && (path === basePath || path.startsWith(`${basePath}/`))) {
-    return path.slice(basePath.length) || '/'
-  }
-  return path || '/'
+  const appPath = basePath && (path === basePath || path.startsWith(`${basePath}/`))
+    ? path.slice(basePath.length)
+    : path
+  return appPath.replace(/\/+$/, '') || '/'
 }
 
 function locationFromRoute(path) {
@@ -80,8 +98,8 @@ function contributionAsArticle(contribution) {
   return {
     id: `contribution-${contribution.id}`,
     sourceContributionId: contribution.id,
-    category: 'Histoires',
-    theme: 'Histoires',
+    category: contribution.category || 'Histoires',
+    theme: contribution.category || 'Histoires',
     title: contribution.title,
     village: contribution.village || 'Mayotte',
     generation: `Récit de ${contribution.author || 'la communauté'}`,
@@ -154,12 +172,9 @@ async function loadSiteData() {
 }
 
 function navigate(page) {
-  const targetPath = page === 'admin' ? '/admin'
-    : page === 'moderation' && routePath.value.startsWith('/admin') ? '/admin/moderation'
-      : page === 'community-profiles' ? '/admin/profils'
-        : page === 'explorer' && routePath.value.startsWith('/admin') ? '/admin/explorer'
-          : page === 'admin-events' ? '/admin/evenements'
-            : page === 'admin-catalog' ? '/admin/contenus' : '/'
+  const targetPath = page === 'explorer'
+    ? routePath.value.startsWith('/admin') ? adminRoutes.explorer : publicRoutes.explorer
+    : adminRoutes[page] || publicRoutes[page] || '/'
   if (routePath.value !== targetPath) {
     window.history.pushState({}, '', locationFromRoute(targetPath))
     routePath.value = targetPath
@@ -284,6 +299,7 @@ onMounted(() => {
   window.addEventListener('popstate', () => {
     routePath.value = routeFromLocation(window.location.pathname)
     activePage.value = pageFromPath(routePath.value)
+    selectedItem.value = null
   })
   if (memberToken.value && !isAdmin.value) {
     apiRequest('/auth/me', { token: memberToken.value })
